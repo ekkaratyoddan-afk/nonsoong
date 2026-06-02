@@ -131,7 +131,7 @@ if user_role == "👨‍🌾 ฝั่งชาวนา":
             st.markdown(f"""
             <div class="calc-box">
                 <span style="font-size: 15px; color: #555;">💰 ยอดเงินรวมสุทธิที่คุณจะได้รับจาก {st.session_state.order_detail['เลือกโรงสี']}:</span><br>
-                <span style="font-size: 32px; color: #D84315;"><b>{st.session_state.order_detail['ราคาสิ้นสุด']:,} บาท</b></span><br>
+                <span style="font-size: 32px; color: #D84315;"><b>{st.session_state.order_detail['raw_money']:,} บาท</b></span><br>
                 <small>คิดเป็นเรตราคาเฉลี่ย: {st.session_state.order_detail['ราคาต่อตัน']:,} บาท/ตัน</small>
             </div>
             """, unsafe_allow_html=True)
@@ -143,7 +143,7 @@ if user_role == "👨‍🌾 ฝั่งชาวนา":
                 
         elif st.session_state.order_status == "ตกลงขายและรอรับชำระเงิน":
             st.success(f"🤝 ซื้อขายตรงกับ **{st.session_state.order_detail['เลือกโรงสี']}** เรียบร้อย!")
-            st.write(f"💰 ยอดเงินรวมสุทธิที่จะโอนเข้าบัญชี: **{st.session_state.order_detail['ราคาสิ้นสุด']:,} บาท**")
+            st.write(f"💰 ยอดเงินรวมสุทธิที่จะโอนเข้าบัญชี: **{st.session_state.order_detail['raw_money']:,} บาท**")
             st.write(f"📍 ที่อยู่จัดเก็บ: {st.session_state.order_detail['ที่อยู่แปลงนา']}")
             st.info("🚛 ข้าวเปลือกกำลังถูกเทส่งเข้าคลังโรงสี กรุณารอยอดเงินโอนจากโรงสีเข้าบัญชี ธ.ก.ส. ของคุณ...")
             
@@ -158,20 +158,21 @@ if user_role == "👨‍🌾 ฝั่งชาวนา":
 elif user_role == "🚛 ฝั่งรถขนข้าว (หน้างาน)":
     st.markdown('<p class="big-font">🚛 ระบบคนขับรถขนส่ง (ใบงานวิ่งรับข้าวตามคำสั่งชาวนา)</p>', unsafe_allow_html=True)
     
+    # 1. เคสที่ 1: ยังไม่มีรายการงานส่งเข้ามา
     if st.session_state.order_status == "ยังไม่มีรายการ":
         st.info("💡 คำแนะนำการทดสอบ: ให้สลับไปที่บทบาท '👨‍🌾 ฝั่งชาวนา' เพื่อเลือกโรงสีและปักหมุดแปลงนาก่อนครับ")
         
+    # 2. เคสที่ 2: ชาวนากดเรียกรถมาแล้ว รอรถกดยืนยันว่าถึงหน้างาน
     elif st.session_state.order_status == "ชาวนาเรียกรถเข้าตรวจงาน":
         st.warning("📥 มีใบสั่งงานขนข้าวเข้าสู่ระบบใหม่")
-        st.markdown(f"🎯 **โรงสีเป้าหมายปลายทางที่ชาวนาสั่ง:** <span style='font-size:18px; color:#2E7D32;'><b>{st.session_state.order_detail['เลือกโรงสี']}</b></span>", unsafe_allow_html=True)
+        st.markdown(f"🎯 **โรงสีเป้าหมายที่ชาวนาสั่ง:** <span style='font-size:18px; color:#2E7D32;'><b>{st.session_state.order_detail['เลือกโรงสี']}</b></span>", unsafe_allow_html=True)
         st.write(f"**📍 ที่อยู่แปลงนาชาวนา:** {st.session_state.order_detail['ที่อยู่แปลงนา']}")
         st.write(f"**🌾 ชนิดข้าว:** ข้าว{st.session_state.order_detail['ประเภท']}")
         
         st.caption("📌 แผนที่นำทาง GPS วิ่งไปนาข้าวชาวนา (จำลอง)")
         st.map(pd.DataFrame({'lat': [15.1814], 'lon': [102.2531]}))
         
-        if st.button("📍 ยืนยัน: เดินทางถึงแปลงนาและนำข้าวพ่วงไปขึ้นตราชั่งของโรงสีแล้ว"):
+        if st.button("📍 ยืนยัน: เดินทางถึงแปลงนาและนำข้าวพ่วงไปขึ้นตราชั่งแล้ว"):
             st.session_state.order_status = "กำลังตรวจวัดคุณภาพและน้ำหนัก"
             st.rerun()
             
-    elif st.session_state.order_status == "กำลังตรวจวัดคุณภาพและน้ำหนัก":
