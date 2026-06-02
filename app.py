@@ -11,6 +11,8 @@ st.markdown("""
     .price-box { background-color: #F0F9F4; padding: 12px; border-radius: 10px; border-left: 5px solid #2E7D32; margin-bottom: 10px; }
     .calc-box { background-color: #FFF9C4; padding: 20px; border-radius: 10px; border-left: 5px solid #FBC02D; margin-top: 15px; }
     .mill-box { background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; margin-bottom: 8px; }
+    .mill-box-top { background-color: #FFF9C4; padding: 15px; border-radius: 8px; border: 1px solid #FFB300; border-left: 6px solid #FFB300; margin-bottom: 8px; }
+    .mill-box-normal { background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; border-left: 6px solid #B0BEC5; margin-bottom: 8px; }
     .role-box { background-color: #E8EAF6; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #3F51B5; }
     .stButton>button { width: 100%; font-size: 18px !important; height: 45px; background-color: #2E7D32; color: white; }
     </style>
@@ -62,7 +64,6 @@ if user_role == "🚛 ฝั่งรถขนข้าว (หน้างา�
         st.subheader("📸 1. ถ่ายภาพสภาพกองข้าวและเมล็ดข้าวเปลือกจริง")
         st.write("กดปุ่มด้านล่างเพื่อเปิดกล้องมือถือถ่ายภาพกองข้าวเปลือกของชาวนา")
         
-        # ฟีเจอร์กล้องถ่ายรูป เปิดกล้องอัตโนมัติเมื่อรันบนมือถือ
         captured_photo = st.camera_input("ถ่ายรูปกองข้าวหน้างาน")
         if captured_photo is not None:
             st.session_state.rice_image = captured_photo
@@ -73,7 +74,6 @@ if user_role == "🚛 ฝั่งรถขนข้าว (หน้างา�
         actual_moisture = st.slider("💧 ค่าความชื้นจริงที่วัดได้หน้างาน (%)", min_value=11, max_value=30, value=16)
         actual_pct = st.slider("🌾 เปอร์เซ็นต์ต้นข้าวสุ่มสีจริง (กรัม)", min_value=30, max_value=50, value=38)
         
-        # ตรวจสอบว่าถ่ายรูปหรือยังก่อนให้กดส่ง
         if st.button("📤 ส่งผลตรวจคุณภาพและรูปถ่ายให้ 5 โรงสี"):
             if st.session_state.rice_image is None:
                 st.error("⚠️ โปรดกดเปิดกล้องและถ่ายรูปกองข้าวก่อนส่งข้อมูลให้โรงสีครับ")
@@ -102,23 +102,23 @@ elif user_role == "🏭 ฝั่งโรงสี (เปิดประมู
     if st.session_state.order_status != "เปิดระบบประมูลราคากลาง":
         st.info("⏳ กำลังรอข้อมูลคุณภาพข้าวและรูปถ่ายจริงจากรถขนส่งหน้าแปลงนา...")
     else:
-        st.markdown("""<style>.mill-card { background-color: #E0F2F1; padding: 15px; border-radius: 10px; margin-bottom: 15px; }</style>""", unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="mill-card">
+        st.markdown("""
+        <div style="background-color: #E0F2F1; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
             <h4>📢 ประกาศประมูลข้าวเปลือกด่วน!</h4>
-            <b>📍 พิกัดนาข้าว:</b> {st.session_state.order_detail['พื้นที่']}<br>
-            <b>🌾 ชนิดข้าว:</b> {st.session_state.order_detail['ประเภท']} | <b>⚖️ ปริมาณ:</b> {st.session_state.order_detail['ปริมาณ']} ตัน<br>
-            <span style="color:#D84315;"><b>🔬 ผลตรวจกลาง: ความชื้น {st.session_state.order_detail['ความชื้น']}% | ต้นข้าว {st.session_state.order_detail['เปอร์เซ็นต์ข้าว']} กรัม</b></span>
+            <b>📍 พิกัดนาข้าว:</b> ข้อมูลจากระบบ<br>
+            <b>🌾 ชนิดข้าว:</b> ระบุในระบบ | <b>⚖️ ปริมาณ:</b> แนบท้ายคำขอ<br>
         </div>
         """, unsafe_allow_html=True)
         
-        # แสดงรูปภาพกองข้าวที่ส่งมาจากหน้างานให้โรงสีดูประกอบการตัดสินใจราคา
+        st.write(f"**📍 พิกัดนาข้าว:** {st.session_state.order_detail['พื้นที่']}")
+        st.write(f"**🌾 ชนิดข้าว:** ข้าว{st.session_state.order_detail['ประเภท']} | **⚖️ ปริมาณ:** {st.session_state.order_detail['ปริมาณ']} ตัน")
+        st.warning(f"🔬 ผลตรวจจากหน้างาน: ความชื้น {st.session_state.order_detail['ความชื้น']}% | ต้นข้าว {st.session_state.order_detail['เปอร์เซ็นต์ข้าว']} กรัม")
+        
         st.subheader("🖼️ ภาพถ่ายสภาพข้าวเปลือกจริงจากหน้าแปลงนา:")
         if st.session_state.rice_image is not None:
             st.image(st.session_state.rice_image, caption="ภาพกองข้าวถ่ายโดยคนขับรถขนส่ง", use_container_width=True)
         
         st.write("---")
-        # ช่องกรอกราคาแข่งกันประมูล
         current_bid = st.session_state.mill_bids.get(selected_mill, 0.0)
         st.write(f"ราคาที่คุณเก็งไว้ปัจจุบัน: **{current_bid:,.2f} บาท/ตัน**")
         
@@ -161,9 +161,6 @@ elif user_role == "👨‍🌾 ฝั่งชาวนา":
         elif st.session_state.order_status == "เปิดระบบประมูลราคากลาง":
             st.markdown('<p class="big-font">🏆 ผลการตรวจคุณภาพและการเสนอราคาจาก 5 โรงสี</p>', unsafe_allow_html=True)
             
-            # สรุปผลจากคนตรวจและรูปถ่ายให้ชาวนาเห็น
-            st.markdown(f"""
-            <div class="calc-box" style="background-color: #E8F5E9; border-left: 5px solid #4CAF50; margin-bottom:15px;">
-                <b>🔬 ผลตรวจรับรองคุณภาพกลาง (จากรถขนส่ง):</b><br>
-                🌾 ชนิดข้าว: ข้าว{st.session_state.order_detail['ประเภท']}<br>
-                💧 เปอร์เซ็นต์ความชื้นจริง: {st.session_state.order_detail['ความชื้น']}%<br>
+            # สรุปผลจากคนตรวจ (หลีกเลี่ยง Triple-Quotes ซ้อนกันเพื่อความปลอดภัย)
+            st.write(f"**🔬 ผลตรวจรับรองคุณภาพกลาง (จากรถขนส่ง):**")
+            st.write(f"🌾 ชนิดข้าว: ข้าว{st.session_state.order_detail['ประเภท']}")
