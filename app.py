@@ -8,17 +8,41 @@ st.set_page_config(page_title="แอปข้าวโนนสูง", page_ic
 st.markdown("""
     <style>
     .big-font { font-size:24px !important; font-weight: bold; color: #1E5631; }
-    .price-box { background-color: #F0F9F4; padding: 15px; border-radius: 10px; border-left: 5px solid #2E7D32; margin-bottom: 10px; }
+    .price-box { background-color: #F0F9F4; padding: 12px; border-radius: 10px; border-left: 5px solid #2E7D32; margin-bottom: 10px; }
     .calc-box { background-color: #FFF9C4; padding: 20px; border-radius: 10px; border-left: 5px solid #FBC02D; margin-top: 15px; }
+    .mill-box { background-color: #FFFFFF; padding: 15px; border-radius: 8px; border: 1px solid #E0E0E0; margin-bottom: 8px; }
     .stButton>button { width: 100%; font-size: 20px !important; height: 50px; background-color: #2E7D32; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- ข้อมูลราคากลางฐาน 2569 (ความชื้นมาตรฐาน 10%, เกณฑ์ต้นข้าวมาตรฐาน 40 กรัม) ---
-BASE_PRICES = {
-    "ข้าวหอมมะลิ 105 (ปี 68/69)": 18200.0,
-    "ข้าวเจ้าทั่วไป (นาปรังปี 69)": 8750.0,
-    "ข้าวเหนียว กข6": 12000.0
+# --- ฐานข้อมูลราคารับซื้อของแต่ละโรงสี (ความชื้นมาตรฐาน 15%, เกณฑ์ต้นข้าว 40 กรัม) ---
+# 💡 คุณสามารถปรับแก้ตัวเลขราคากลางตรงนี้ได้ตามต้องการเลยครับ
+MILL_PRICES = {
+    "1. โรงสีบ้านดี": {
+        "ข้าวหอมมะลิ 105 (ปี 68/69)": 15600.0,
+        "ข้าวเจ้าทั่วไป (นาปรังปี 69)": 8800.0,
+        "ข้าวเหนียว กข6": 12100.0
+    },
+    "2. โรงสีนายบุญ": {
+        "ข้าวหอมมะลิ 105 (ปี 68/69)": 15450.0,
+        "ข้าวเจ้าทั่วไป (นาปรังปี 69)": 8700.0,
+        "ข้าวเหนียว กข6": 11950.0
+    },
+    "3. โรงเจริญผล": {
+        "ข้าวหอมมะลิ 105 (ปี 68/69)": 15500.0,
+        "ข้าวเจ้าทั่วไป (นาปรังปี 69)": 8750.0,
+        "ข้าวเหนียว กข6": 12000.0
+    },
+    "4. โรงสีธัญพืชผล": {
+        "ข้าวหอมมะลิ 105 (ปี 68/69)": 15550.0,
+        "ข้าวเจ้าทั่วไป (นาปรังปี 69)": 8900.0,
+        "ข้าวเหนียว กข6": 12050.0
+    },
+    "5. โรงสีตากบ": {
+        "ข้าวหอมมะลิ 105 (ปี 68/69)": 15300.0,
+        "ข้าวเจ้าทั่วไป (นาปรังปี 69)": 8650.0,
+        "ข้าวเหนียว กข6": 11800.0
+    }
 }
 
 # --- ระบบจำลองฐานข้อมูล (Session State) ---
@@ -30,133 +54,118 @@ if 'order_detail' not in st.session_state:
 # --- แถบเมนูด้านข้าง ---
 st.sidebar.image("https://flaticon.com", width=100)
 st.sidebar.title("🌾 ข้าวโนนสูง โคราช")
-st.sidebar.write("ระบบรับซื้อ-ขายข้าวและบริการเกษตร")
+st.sidebar.write("ระบบเปรียบเทียบราคารับซื้อโรงสีท้องถิ่น")
 menu = st.sidebar.radio("เลือกเมนูใช้งาน", ["🏠 หน้าแรก (Dashboard)", "📋 รายการของฉัน", "💬 กล่องข้อความ", "👤 ข้อมูลส่วนตัว"])
 
 # =========================================================================
 # 🏠 เมนู: หน้าแรก
 # =========================================================================
 if menu == "🏠 หน้าแรก (Dashboard)":
-    st.markdown('<p class="big-font">🌾 ราคารับซื้อเกณฑ์มาตรฐาน อ.โนนสูง</p>', unsafe_allow_html=True)
-    st.write("*ราคาประเมินอ้างอิงความชื้น 15% และต้นข้าวระดับมาตรฐาน*")
+    st.markdown('<p class="big-font">📊 เครื่องคำนวณและเปรียบเทียบราคา 5 โรงสี</p>', unsafe_allow_html=True)
+    st.write("ระบบจะคำนวณราคาหักลดความชื้นและคุณภาพข้าวให้สอดคล้องกับแต่ละโรงสีอัตโนมัติ")
     
-    # แสดงราคากลางรายตัว
-    cols = st.columns(3)
-    for i, (rice_name, r_price) in enumerate(BASE_PRICES.items()):
-        with cols[i % 3]:
-            st.markdown(f"""
-            <div class="price-box" style="font-size: 13px;">
-                <b>{rice_name}</b><br>
-                <span style="font-size: 18px; color: #2E7D32;"><b>{r_price:,}</b></span> บ./ตัน
-            </div>
-            """, unsafe_allow_html=True)
+    # ส่วนกรอกข้อมูลของชาวนา
+    with st.container(border=True):
+        st.subheader("🌾 ข้อมูลข้าวเปลือกของคุณ")
+        calc_rice_type = st.selectbox("เลือกประเภทข้าว", ["ข้าวหอมมะลิ 105 (ปี 68/69)", "ข้าวเจ้าทั่วไป (นาปรังปี 69)", "ข้าวเหนียว กข6"])
+        calc_amount = st.number_input("ใส่ปริมาณข้าวทั้งหมด (ตัน)", min_value=0.1, max_value=100.0, value=1.0, step=0.5)
         
+        col_input1, col_input2 = st.columns(2)
+        with col_input1:
+            calc_moisture = st.slider("เปอร์เซ็นต์ความชื้น (%)", min_value=11, max_value=30, value=15)
+        with col_input2:
+            calc_rice_pct = st.slider("% ต้นข้าวจากการสุ่มสี (กรัม)", min_value=30, max_value=50, value=40)
+
     st.write("---")
+    st.markdown('<p class="big-font">🏭 ตารางเปรียบเทียบราคาโรงสีใน อ.โนนสูง</p>', unsafe_allow_html=True)
+    st.write("*คำนวณจากน้ำหนักและคุณภาพข้าวของคุณแล้ว โรงสีที่ให้ราคาสูงสุดจะอยู่บนสุด*")
+
+    # --- ส่วนการคำนวณและประมวลผลราคาของแต่ละโรงสี ---
+    calculated_mills = []
     
-    # 🧮 เครื่องคำนวณราคากลางขั้นสูง (ความชื้น + เปอร์เซ็นต์ข้าว)
-    st.markdown('<p class="big-font">🧮 เครื่องคำนวณราคา (ความชื้น + % ต้นข้าว)</p>', unsafe_allow_html=True)
-    
-    calc_rice_type = st.selectbox("1. เลือกประเภทข้าวของคุณ", list(BASE_PRICES.keys()), key="calc_type")
-    calc_amount = st.number_input("2. ใส่ปริมาณข้าวทั้งหมด (ตัน)", min_value=0.1, max_value=100.0, value=1.0, step=0.5, key="calc_weight")
-    
-    col_input1, col_input2 = st.columns(2)
-    with col_input1:
-        calc_moisture = st.slider("3. เปอร์เซ็นต์ความชื้น (%)", min_value=11, max_value=30, value=15, key="calc_moist")
-    with col_input2:
-        calc_rice_pct = st.slider("4. % ต้นข้าวจากการสุ่มสี (กรัม)", min_value=30, max_value=50, value=40, key="calc_pct")
-    
-    # --- สูตรคำนวณทางคณิตศาสตร์สไตล์โรงสี ---
-    base_price_per_ton = BASE_PRICES[calc_rice_type]
-    
-    # 1. คำนวณหัก/เพิ่ม จากความชื้น (เกณฑ์มาตรฐาน 15%)
-    moisture_diff_money = 0.0
-    if calc_moisture > 15:
-        # ความชื้นเกิน หักตันละ 150 บาทต่อเปอร์เซ็นต์ที่เกิน
-        moisture_diff_money = -(calc_moisture - 15) * 150.0
-    elif calc_moisture < 15:
-        # ข้าวแห้งดี ได้เพิ่มตันละ 50 บาทต่อเปอร์เซ็นต์ที่ลดลง
-        moisture_diff_money = (15 - calc_moisture) * 50.0
+    for mill_name, prices in MILL_PRICES.items():
+        base_price = prices[calc_rice_type]
         
-    # 2. คำนวณหัก/เพิ่ม จากเปอร์เซ็นต์ต้นข้าว (เกณฑ์มาตรฐานอยู่ที่ 40 กรัม)
-    # โรงสีจะให้ราคาเพิ่มหรือลดประมาณ ตันละ 200 บาท ต่อ 1 กรัมต้นข้าวที่เปลี่ยนแปลง
-    rice_pct_diff_money = (calc_rice_pct - 40) * 200.0
-    
-    # สรุปราคาต่อตันสุทธิ
-    final_price_per_ton = base_price_per_ton + moisture_diff_money + rice_pct_diff_money
-    
-    # คำนวณราคารวมทั้งหมด
-    total_money = final_price_per_ton * calc_amount
-    
-    # คำอธิบายประกอบเหตุผล
-    note_details = []
-    if calc_moisture > 15: note_details.append(f"หักความชื้นเกิน (-{abs(moisture_diff_money):,} บ.)")
-    elif calc_moisture < 15: note_details.append(f"เพิ่มค่าข้าวแห้ง (+{moisture_diff_money:,} บ.)")
-    
-    if calc_rice_pct > 40: note_details.append(f"โบนัสข้าวเต็มเมล็ดสวย (+{rice_pct_diff_money:,} บ.)")
-    elif calc_rice_pct < 40: note_details.append(f"หักข้าวหักเยอะเกินเกณฑ์ (-{abs(rice_pct_diff_money):,} บ.)")
-    
-    note_text = " / ".join(note_details) if note_details else "คุณภาพตรงตามเกณฑ์มาตรฐานเป๊ะ"
-    
-    # แสดงผลลัพธ์แบบเด่นชัด
-    st.markdown(f"""
-    <div class="calc-box">
-        <span style="font-size: 15px; color: #555;">💰 เงินสุทธิคาดการณ์ที่ชาวนาจะได้รับ:</span><br>
-        <span style="font-size: 34px; color: #E65100;"><b>{total_money:,} บาท</b></span><br>
-        <small><b>ราคาประเมินจริง:</b> ตันละ {final_price_per_ton:,} บาท</small><br>
-        <small style="color: #757575;"><b>หมายเหตุระบบ:</b> {note_text}</small>
-    </div>
-    """, unsafe_allow_html=True)
+        # 1. คำนวณหัก/เพิ่ม ความชื้น (เกิน 15% หักตันละ 150 บ., ต่ำกว่าเพิ่มตันละ 50 บ.)
+        moisture_diff = 0.0
+        if calc_moisture > 15:
+            moisture_diff = -(calc_moisture - 15) * 150.0
+        elif calc_moisture < 15:
+            moisture_diff = (15 - calc_moisture) * 50.0
+            
+        # 2. คำนวณหัก/เพิ่ม เปอร์เซ็นต์ข้าว (ต่างจาก 40 กรัม คิดกรัมละ 200 บ.)
+        rice_pct_diff = (calc_rice_pct - 40) * 200.0
         
-    st.write("---")
-    
-    # ปุ่มส่งข้อมูลขายข้าวไปยังโรงสี
-    st.markdown('<p class="big-font">🟢 ส่งข้อมูลเสนอขายข้าว</p>', unsafe_allow_html=True)
-    
-    with st.expander("คลิกที่นี่เพื่อส่งข้อมูลข้าวล๊อตนี้ให้โรงสีในอำเภอโนนสูงประมูลราคา"):
-        sub_district = st.selectbox("เลือกตำบลของคุณ", ["โนนสูง", "ใหม่", "โตนด", "จันอัด", "ด่านคล้า", "ขามสะแกแสง", "พลสงคราม", "ลำคอหงษ์"])
-        gps_mock = st.text_input("พิกัดแปลงนาของคุณ", "15.1814° N, 102.2531° E (อ.โนนสูง โคราช)")
+        # ราคาต่อตันสุทธิและราคารวมของโรงสีนี้
+        net_price_per_ton = base_price + moisture_diff + rice_pct_diff
+        total_money = net_price_per_ton * calc_amount
         
-        if st.button("🚀 ยืนยันการส่งข้อมูลขายข้าว"):
-            st.session_state.order_status = "โรงสีกำลังเสนอราคา"
+        calculated_mills.append({
+            "name": mill_name,
+            "price_per_ton": net_price_per_ton,
+            "total_money": total_money
+        })
+    
+    # เรียงลำดับโรงสีที่ให้ราคารวมสูงสุดขึ้นก่อน (ชาวนาได้ประโยชน์ที่สุด)
+    calculated_mills = sorted(calculated_mills, key=lambda x: x['total_money'], reverse=True)
+    
+    # แสดงผลรายการโรงสีแบบการ์ดเรียงลงมา
+    for index, mill in enumerate(calculated_mills):
+        # ไฮไลท์โรงสีที่ให้ราคาสูงที่สุดเป็นสีทอง/เขียวเด่น
+        badge = "🏆 ให้ราคาสูงสุด" if index == 0 else ""
+        
+        st.markdown(f"""
+        <div class="mill-box" style="background-color: {'#FFF9C4' if index == 0 else '#FFFFFF'}; border-left: 6px solid {'#FFB300' if index == 0 else '#B0BEC5'};">
+            <span style="float: right; font-weight: bold; color: #E65100; font-size: 14px;">{badge}</span>
+            <b style="font-size: 18px; color: #1E5631;">{mill['name']}</b><br>
+            <span style="font-size: 14px; color: #555;">ราคาประเมินจริง: <b>{mill['price_per_ton']:,} บาท/ตัน</b></span><br>
+            <span style="font-size: 20px; color: #D84315;">ยอดเงินรวมสุทธิที่คุณจะได้รับ: <b>{mill['total_money']:,} บาท</b></span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # เพิ่มปุ่มกดเลือกขายให้โรงสีนั้นๆ ข้างใต้การ์ด
+        if st.button(f"🚀 ตกลงขายข้าวให้กับ {mill['name']}", key=f"btn_{mill['name']}"):
+            st.session_state.order_status = "รอโรงสีตอบรับการนัดหมาย"
             st.session_state.order_detail = {
+                "โรงสี": mill['name'],
                 "ประเภท": calc_rice_type,
                 "ปริมาณ": calc_amount,
                 "ความชื้น": calc_moisture,
                 "เปอร์เซ็นต์ข้าว": calc_rice_pct,
-                "ราคาประเมิน": total_money,
-                "พื้นที่": f"ต.{sub_district} อ.โนนสูง"
+                "ราคาประเมิน": mill['total_money']
             }
-            st.success("ส่งข้อมูลสำเร็จ! ระบบกำลังส่งข้อมูลให้โรงสีพาร์ทเนอร์ในพื้นที่โคราชติดต่อกลับ")
+            st.success(f"บันทึกรายการสำเร็จ! ระบบส่งข้อมูลใบเสนอราคาไปยัง {mill['name']} เรียบร้อยแล้ว")
             st.balloons()
+            st.rerun()
 
 # =========================================================================
 # 📋 เมนู: รายการของฉัน
 # =========================================================================
 elif menu == "📋 รายการของฉัน":
-    st.markdown('<p class="big-font">📋 สถานะการขายข้าวปัจจุบัน</p>', unsafe_allow_html=True)
+    st.markdown('<p class="big-font">📋 สถานะการซื้อขายปัจจุบัน</p>', unsafe_allow_html=True)
     
     if st.session_state.order_status == "ยังไม่มีรายการ":
-        st.info("คุณยังไม่มีรายการขายข้าวในขณะนี้ กลับไปที่หน้าแรกเพื่อส่งข้อมูล")
+        st.info("คุณยังไม่มีรายการเสนอขายข้าวในขณะนี้ กลับไปที่หน้าแรกเพื่อคำนวณและเลือกโรงสี")
     else:
+        st.write(f"**🏭 โรงสีที่เลือก:** {st.session_state.order_detail['โรงสี']}")
         st.write(f"**🌾 ชนิดข้าว:** {st.session_state.order_detail['ประเภท']}")
         st.write(f"**⚖️ น้ำหนักรวม:** {st.session_state.order_detail['ปริมาณ']} ตัน")
-        st.write(f"**💧 ความชื้น:** {st.session_state.order_detail['ความชื้น']}% | **🌾 ต้นข้าว:** {st.session_state.order_detail['เปอร์เซ็นต์ข้าว']} กรัม")
-        st.write(f"**💰 ยอดเงินในระบบ:** {st.session_state.order_detail['ราคาประเมิน']:,} บาท")
-        st.write(f"**📍 พื้นที่นัดหมาย:** {st.session_state.order_detail['พื้นที่']}")
+        st.write(f"**💧 คุณภาพข้าว:** ความชื้น {st.session_state.order_detail['ความชื้น']}% | ต้นข้าว {st.session_state.order_detail['เปอร์เซ็นต์ข้าว']} กรัม")
+        st.markdown(f"### 💰 ยอดเงินที่จะได้รับ: <span style='color:#E65100;'>{st.session_state.order_detail['ราคาประเมิน']:,} บาท</span>", unsafe_allow_html=True)
         
         status = st.session_state.order_status
         st.warning(f"🔔 สถานะปัจจุบัน: **{status}**")
         
-        if status == "โรงสีกำลังเสนอราคา":
-            if st.button("ตกลงขายราคานี้ให้กับ โรงสีโนนสูงเจริญการค้า"):
+        if status == "รอโรงสีตอบรับการนัดหมาย":
+            if st.button(f"จำลองสถานการณ์: {st.session_state.order_detail['โรงสี']} กดยืนยันคิวรถรับส่ง"):
                 st.session_state.order_status = "รถขนส่งกำลังเดินทางไปแปลงนา"
                 st.rerun()
         elif status == "รถขนส่งกำลังเดินทางไปแปลงนา":
-            if st.button("จำลองสถานการณ์: รถชั่งน้ำหนักเสร็จสิ้น และชาวนากดรับเงิน"):
+            if st.button("จำลองสถานการณ์: รถชั่งน้ำหนักเรียบร้อย และตรวจสอบคุณภาพตรงกัน"):
                 st.session_state.order_status = "ชำระเงินสำเร็จ (เงินเข้าบัญชี ธ.ก.ส. แล้ว)"
                 st.rerun()
-        elif status == "ชำระเงินสำเร็จ (เงินเข้าบัญชี ธ.ก.ส. แล้ว)":
-            st.success("🎉 การซื้อขายเสร็จสิ้น! ระบบโอนเงินผ่านระบบ Fast Payment เรียบร้อย")
+        elif status == "ชำrateเงินสำเร็จ (เงินเข้าบัญชี ธ.ก.ส. แล้ว)" or status == "ชำระเงินสำเร็จ (เงินเข้าบัญชี ธ.ก.ส. แล้ว)":
+            st.success("🎉 การซื้อขายเสร็จสิ้นสมบูรณ์! เงินถูกโอนเข้าบัญชีชาวนาเรียบร้อย")
             if st.button("เริ่มการขายล๊อตถัดไป"):
                 st.session_state.order_status = "ยังไม่มีรายการ"
                 st.rerun()
@@ -166,10 +175,12 @@ elif menu == "📋 รายการของฉัน":
 # =========================================================================
 elif menu == "💬 กล่องข้อความ":
     st.markdown('<p class="big-font">💬 แชทติดต่อสอบถาม</p>', unsafe_allow_html=True)
+    if st.session_state.order_status != "ยังไม่มีรายการ":
+        st.write(f"ห้องสนทนาของท่านกับ: **{st.session_state.order_detail['โรงสี']}**")
     with st.container(border=True):
-        st.write("**👨‍🌾 คุณ (ชาวนา):** สวัสดีครับ รถขนส่งจะเข้ามากี่โมงครับ?")
-        st.write("**🏭 โรงสีโนนสูงเจริญการค้า:** กำลังจัดคิวรถออกไปช่วงบ่ายโมงวันนี้ครับพ่อใหญ่ เตรียมหน้าแปลงนาไว้ได้เลยจ้า")
-    st.text_input("พิมพ์ข้อความของคุณที่นี่...")
+        st.write("**👨‍🌾 คุณ (ชาวนา):** สวัสดีครับ ปักหมุดที่นาโนนสูงให้แล้วนะครับ")
+        st.write("**🏭 ฝ่ายรับซื้อของโรงสี:** ได้รับข้อมูลแล้วค่ะ เจ้าหน้าที่กำลังวางแผนจัดคิวรถพ่วงวิ่งเข้าจัดเก็บค่ะ")
+    st.text_input("พิมพ์ข้อความติดต่อโรงสี...")
     st.button("ส่งข้อความ")
 
 elif menu == "👤 ข้อมูลส่วนตัว":
